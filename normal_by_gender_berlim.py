@@ -13,16 +13,12 @@ import opensmile
 from scipy.stats import anderson
 from sklearn.preprocessing import RobustScaler
 
+db = audb.load('emodb') #load database
 
-db = audb.load('emodb') #Carrega a base de dados
-
-df = db.tables['emotion'].df #cria uma tabela com as emoções
-
-
-#df.emotion.value_counts().plot(kind='pie') # plota o gráfico de pizza do número de emoções da base
+df = db.tables['emotion'].df #load table with emotions
 
 
-#chama a biblioteca que calcula os parametros baseado no GeMAPS
+#OpenSmile package to extract audio features, select the configurations and the group of features
 smile = opensmile.Smile(
    #feature_set=opensmile.FeatureSet.eGeMAPSv02,
    feature_set=opensmile.FeatureSet.ComParE_2016,
@@ -30,35 +26,23 @@ smile = opensmile.Smile(
 )
 
 
-feats_df = smile.process_files(df.index) #faz a extracao dos parmateros
-
-feats_df.shape #tamanho da matriz de paramteros
+feats_df = smile.process_files(df.index) #load the features
 
 
+# Normalize all data
 
 feats_df_r = RobustScaler().fit(feats_df)
 feats_df_n = feats_df_r.transform(feats_df)
 feats_df2 = pd.DataFrame(feats_df_n)
-#feats_df = feats_df2
 
 
-colors = {'happiness':'red', 'neutral':'green', 'sadness':'blue', 'fear':'yellow', 'boredom':'pink', 'disgust':'black', 'anger':'purple'}
-
-#fig = plt.figure(figsize=(12, 12))
-#ax = fig.add_subplot(projection='3d')
-
-#ax.scatter(feats_df2[1], feats_df2[10], feats_df2[13], c=df['emotion'].map(colors))
-
-#plt.show()
+#slit by gender
 
 datadb = db["files"]["speaker"].get(index=db["emotion"].index, map="gender")
 
 datadb = datadb.map({'male': 'Male', 'female': 'Female'})
 
 gender = pd.DataFrame(datadb)
-
-
-
 
 
 male= []
@@ -70,15 +54,13 @@ for i in range(len(df)):
     else:
         female.append(i)
         
-#plt.hist(feats_df.iloc[:,41])
-
 
 feats_male = feats_df.drop(feats_df.index[female])
 
 feats_female = feats_df.drop(feats_df.index[male])
 
 
-## Selecionando parametros normais para audios masculinos
+## Distribuition test for male features
 
 statsm = []
 cvaluem = []
@@ -104,7 +86,6 @@ for i in range(len(cvaluem)):
         notnormmind.append(feats_male.columns[i])
         notnormnamem.append(feats_male.columns[i])
         
-#plt.hist(feats_df.iloc[:,41])
 
 icaselectedm = []
 pcaselectedm = []
@@ -114,7 +95,7 @@ icaselectedm = feats_male.drop(notnormmind,axis=1)
 pcaselectedm = feats_male.drop(normmind,axis=1)
 
 
-## Selecionando parametros normais para audios femininos
+## Distribuition test for male features
 
 statsf = []
 cvaluef = []
@@ -141,7 +122,7 @@ for i in range(len(cvaluem)):
         notnormfind.append(feats_female.columns[i])
         notnormnamef.append(feats_df.columns[i])
         
-#plt.hist(feats_df.iloc[:,41])
+
 
 icaselectedf = []
 pcaselectedf = []
@@ -155,7 +136,7 @@ print("Number of female features with normal distribuition: ",len(normfind))
 print("Number of male features with normal distribuition: ",len(normmind))
 
 
-# Graoh of all datas, gender, and distribuition by gender
+## Graoh of all datas, gender, and distribuition by gender
 
 
 
